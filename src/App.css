@@ -306,6 +306,20 @@ body::before {
 /* ── Palace Map ───────────────────────────────────────────── */
 .palace-map {}
 
+.blueprint-wrap {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 80, 160, 0.4), var(--glow);
+}
+
+.blueprint-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .map-toolbar {
   display: flex;
   align-items: center;

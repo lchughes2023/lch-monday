@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import PalaceMap from './components/PalaceMap'
 import RouteGame from './components/RouteGame'
 import QuizMode from './components/QuizMode'
 import IdeaJournal from './components/IdeaJournal'
 import ProgressPanel from './components/ProgressPanel'
+import { supabase, getUserId } from './lib/supabase'
 import './App.css'
 
 const INITIAL_PROGRESS = {
@@ -36,10 +37,61 @@ export default function App() {
     }
   })
   const [xpPopup, setXpPopup] = useState(null)
+  const [synced, setSynced] = useState(false)
+  const saveTimerRef = useRef(null)
 
+  // Load from Supabase on mount
+  useEffect(() => {
+    async function loadFromSupabase() {
+      const userId = getUserId()
+      const [{ data: progressData }, { data: journalData }] = await Promise.all([
+        supabase.from('user_progress').select('*').eq('user_id', userId).single(),
+        supabase.from('journal_entries').select('*').eq('user_id', userId).order('ts', { ascending: false }),
+      ])
+
+      if (progressData) {
+        setProgress(() => ({
+          xp: progressData.xp,
+          level: progressData.level,
+          streak: progressData.streak,
+          bestStreak: progressData.best_streak,
+          totalCorrect: progressData.total_correct,
+          totalAttempts: progressData.total_attempts,
+          achievements: progressData.achievements || [],
+          journalEntries: (journalData || []).map((e) => ({
+            id: Number(e.id),
+            text: e.text,
+            roomId: e.room_id,
+            ts: e.ts,
+          })),
+        }))
+      }
+      setSynced(true)
+    }
+    loadFromSupabase()
+  }, [])
+
+  // Save progress to localStorage + Supabase (debounced)
   useEffect(() => {
     localStorage.setItem('memoryPalaceProgress', JSON.stringify(progress))
-  }, [progress])
+
+    if (!synced) return
+    clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(async () => {
+      const userId = getUserId()
+      await supabase.from('user_progress').upsert({
+        user_id: userId,
+        xp: progress.xp,
+        level: progress.level,
+        streak: progress.streak,
+        best_streak: progress.bestStreak,
+        total_correct: progress.totalCorrect,
+        total_attempts: progress.totalAttempts,
+        achievements: progress.achievements,
+        updated_at: new Date().toISOString(),
+      })
+    }, 1000)
+  }, [progress, synced])
 
   const addXP = useCallback((amount) => {
     setProgress((prev) => {
@@ -50,6 +102,35 @@ export default function App() {
     const popupId = Date.now()
     setXpPopup({ amount, id: popupId })
     setTimeout(() => setXpPopup(null), 2000)
+  }, [])
+
+  const addJournalEntry = useCallback(async (entry) => {
+    setProgress((prev) => {
+      const journalEntries = [entry, ...prev.journalEntries]
+      const achievements = [...prev.achievements]
+      if (!achievements.includes('first-log')) achievements.push('first-log')
+      if (journalEntries.length >= 10 && !achievements.includes('journal-keeper')) {
+        achievements.push('journal-keeper')
+      }
+      return { ...prev, journalEntries, achievements }
+    })
+    const userId = getUserId()
+    await supabase.from('journal_entries').insert({
+      id: String(entry.id),
+      user_id: userId,
+      text: entry.text,
+      room_id: entry.roomId,
+      ts: entry.ts,
+    })
+  }, [])
+
+  const deleteJournalEntry = useCallback(async (id) => {
+    setProgress((prev) => ({
+      ...prev,
+      journalEntries: prev.journalEntries.filter((e) => e.id !== id),
+    }))
+    const userId = getUserId()
+    await supabase.from('journal_entries').delete().eq('id', String(id)).eq('user_id', userId)
   }, [])
 
   const xpInLevel = progress.xp % 100
@@ -107,7 +188,11 @@ export default function App() {
           <QuizMode progress={progress} setProgress={setProgress} addXP={addXP} />
         )}
         {screen === 'journal' && (
-          <IdeaJournal progress={progress} setProgress={setProgress} />
+          <IdeaJournal
+            progress={progress}
+            onAdd={addJournalEntry}
+            onDelete={deleteJournalEntry}
+          />
         )}
         {screen === 'progress' && <ProgressPanel progress={progress} setProgress={setProgress} />}
       </main>

@@ -11,7 +11,7 @@ function timeAgo(ts) {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-export default function IdeaJournal({ progress, setProgress }) {
+export default function IdeaJournal({ progress, onAdd, onDelete }) {
   const [text, setText] = useState('')
   const [roomId, setRoomId] = useState('front-garden')
   const [filter, setFilter] = useState('all')
@@ -24,23 +24,8 @@ export default function IdeaJournal({ progress, setProgress }) {
       roomId,
       ts: Date.now(),
     }
-    setProgress((prev) => {
-      const journalEntries = [entry, ...prev.journalEntries]
-      const achievements = [...prev.achievements]
-      if (!achievements.includes('first-log')) achievements.push('first-log')
-      if (journalEntries.length >= 10 && !achievements.includes('journal-keeper')) {
-        achievements.push('journal-keeper')
-      }
-      return { ...prev, journalEntries, achievements }
-    })
+    onAdd(entry)
     setText('')
-  }
-
-  function handleDelete(id) {
-    setProgress((prev) => ({
-      ...prev,
-      journalEntries: prev.journalEntries.filter((e) => e.id !== id),
-    }))
   }
 
   const entries = progress.journalEntries || []
@@ -132,7 +117,7 @@ export default function IdeaJournal({ progress, setProgress }) {
                     <span className="entry-time">{timeAgo(entry.ts)}</span>
                   </div>
                 </div>
-                <button className="entry-delete" onClick={() => handleDelete(entry.id)} title="Delete">
+                <button className="entry-delete" onClick={() => onDelete(entry.id)} title="Delete">
                   ✕
                 </button>
               </div>

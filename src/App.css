@@ -926,3 +926,59 @@ body::before {
 
 .reset-section { text-align: center; padding-top: .5rem; }
 .reset-note { font-size: .75rem; color: var(--text-lo); margin-top: .4rem; }
+
+/* ── Login Screen ─────────────────────────────────────────── */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: var(--glow);
+}
+
+.login-icon { font-size: 3rem; margin-bottom: 1rem; }
+.login-title { font-size: 1.5rem; font-weight: 700; color: var(--text-hi); margin-bottom: .4rem; }
+.login-subtitle { font-size: .9rem; color: var(--text-mid); margin-bottom: 2rem; }
+.login-text { color: var(--text-hi); margin-bottom: .5rem; }
+.login-hint { font-size: .85rem; color: var(--text-mid); margin-bottom: 1.5rem; }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.login-input {
+  width: 100%;
+  padding: .75rem 1rem;
+  background: rgba(0,40,80,.5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-hi);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color .2s;
+}
+
+.login-input:focus { border-color: var(--blue-bright); }
+.login-input::placeholder { color: var(--text-lo); }
+
+.login-btn { width: 100%; padding: .8rem; font-size: 1rem; }
+
+.sign-out-btn {
+  font-size: .75rem;
+  padding: .3rem .7rem;
+  opacity: .7;
+}
+.sign-out-btn:hover { opacity: 1; }

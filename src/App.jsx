@@ -4,7 +4,8 @@ import RouteGame from './components/RouteGame'
 import QuizMode from './components/QuizMode'
 import IdeaJournal from './components/IdeaJournal'
 import ProgressPanel from './components/ProgressPanel'
-import { supabase, getUserId } from './lib/supabase'
+import LoginScreen from './components/LoginScreen'
+import { supabase } from './lib/supabase'
 import './App.css'
 
 const INITIAL_PROGRESS = {
@@ -27,30 +28,41 @@ function XpPopup({ amount, id }) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [screen, setScreen] = useState('map')
-  const [progress, setProgress] = useState(() => {
-    try {
-      const saved = localStorage.getItem('memoryPalaceProgress')
-      return saved ? { ...INITIAL_PROGRESS, ...JSON.parse(saved) } : INITIAL_PROGRESS
-    } catch {
-      return INITIAL_PROGRESS
-    }
-  })
+  const [progress, setProgress] = useState(INITIAL_PROGRESS)
   const [xpPopup, setXpPopup] = useState(null)
   const [synced, setSynced] = useState(false)
   const saveTimerRef = useRef(null)
 
-  // Load from Supabase on mount
+  // Auth state — detect session on load and listen for changes
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setAuthLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Load progress from Supabase when user is known
+  useEffect(() => {
+    if (!user) return
+    setSynced(false)
+
     async function loadFromSupabase() {
-      const userId = getUserId()
       const [{ data: progressData }, { data: journalData }] = await Promise.all([
-        supabase.from('user_progress').select('*').eq('user_id', userId).single(),
-        supabase.from('journal_entries').select('*').eq('user_id', userId).order('ts', { ascending: false }),
+        supabase.from('user_progress').select('*').eq('user_id', user.id).single(),
+        supabase.from('journal_entries').select('*').eq('user_id', user.id).order('ts', { ascending: false }),
       ])
 
       if (progressData) {
-        setProgress(() => ({
+        setProgress({
           xp: progressData.xp,
           level: progressData.level,
           streak: progressData.streak,
@@ -64,23 +76,23 @@ export default function App() {
             roomId: e.room_id,
             ts: e.ts,
           })),
-        }))
+        })
+      } else {
+        setProgress(INITIAL_PROGRESS)
       }
       setSynced(true)
     }
+
     loadFromSupabase()
-  }, [])
+  }, [user])
 
-  // Save progress to localStorage + Supabase (debounced)
+  // Save progress to Supabase (debounced)
   useEffect(() => {
-    localStorage.setItem('memoryPalaceProgress', JSON.stringify(progress))
-
-    if (!synced) return
+    if (!user || !synced) return
     clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(async () => {
-      const userId = getUserId()
       await supabase.from('user_progress').upsert({
-        user_id: userId,
+        user_id: user.id,
         xp: progress.xp,
         level: progress.level,
         streak: progress.streak,
@@ -91,7 +103,7 @@ export default function App() {
         updated_at: new Date().toISOString(),
       })
     }, 1000)
-  }, [progress, synced])
+  }, [progress, user, synced])
 
   const addXP = useCallback((amount) => {
     setProgress((prev) => {
@@ -114,24 +126,28 @@ export default function App() {
       }
       return { ...prev, journalEntries, achievements }
     })
-    const userId = getUserId()
     await supabase.from('journal_entries').insert({
       id: String(entry.id),
-      user_id: userId,
+      user_id: user.id,
       text: entry.text,
       room_id: entry.roomId,
       ts: entry.ts,
     })
-  }, [])
+  }, [user])
 
   const deleteJournalEntry = useCallback(async (id) => {
     setProgress((prev) => ({
       ...prev,
       journalEntries: prev.journalEntries.filter((e) => e.id !== id),
     }))
-    const userId = getUserId()
-    await supabase.from('journal_entries').delete().eq('id', String(id)).eq('user_id', userId)
-  }, [])
+    await supabase.from('journal_entries').delete().eq('id', String(id)).eq('user_id', user.id)
+  }, [user])
+
+  // Show nothing while checking auth
+  if (authLoading) return null
+
+  // Show login if not signed in
+  if (!user) return <LoginScreen />
 
   const xpInLevel = progress.xp % 100
   const tabs = [
@@ -164,6 +180,13 @@ export default function App() {
             <span className="xp-total">{progress.xp} XP</span>
           </div>
           <div className="streak-badge">🔥 {progress.streak}</div>
+          <button
+            className="btn sign-out-btn"
+            onClick={() => supabase.auth.signOut()}
+            title="Sign out"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 

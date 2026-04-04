@@ -1272,3 +1272,166 @@ textarea.input { resize: vertical; min-height: 60px; }
   gap: .6rem;
   justify-content: center;
 }
+
+/* ── Onboarding ───────────────────────────────────────────── */
+.onboarding-wrap {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+  font-family: sans-serif;
+}
+
+.onboarding-card {
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.onboarding-headline-bar {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 10px;
+  padding: 6px 24px;
+  z-index: 10;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.onboarding-visual {
+  padding-top: 28px;
+}
+
+.onboarding-caption {
+  background: rgba(0,0,0,.55);
+  padding: 7px 0;
+  text-align: center;
+  font-size: 11px;
+}
+
+.onboarding-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.onboarding-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: var(--border-tertiary, #333);
+  transition: background .3s;
+  padding: 0;
+}
+
+.onboarding-dot--active {
+  background: #a78bfa;
+}
+
+.onboarding-counter {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-lo);
+  margin-top: 8px;
+}
+
+/* ── Palace Switcher (My Palaces) ─────────────────────────── */
+.my-palaces-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.my-palaces-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.section-label {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-lo);
+  font-weight: 600;
+  margin: 0;
+}
+
+.palace-cards {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.palace-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  background: var(--bg-mid);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .6rem 1rem;
+  transition: border-color .2s;
+}
+
+.palace-card--active {
+  border-color: var(--blue-bright);
+  box-shadow: 0 0 0 1px var(--blue-bright)22;
+}
+
+.palace-card-info {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.palace-card-name {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text-hi);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge-active {
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--blue-bright);
+  border: 1px solid var(--blue-bright);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.palace-card-actions {
+  display: flex;
+  gap: .4rem;
+  flex-shrink: 0;
+}
+
+.create-palace-inline {
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}

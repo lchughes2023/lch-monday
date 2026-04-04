@@ -11,6 +11,7 @@ export function PalaceProvider({ children }) {
   const [zones, setZones] = useState([])
   const [rooms, setRooms] = useState([])
   const [scenarios, setScenarios] = useState([])
+  const [allPalaces, setAllPalaces] = useState([])
   const [palaceLoading, setPalaceLoading] = useState(true)
   const [hasPalace, setHasPalace] = useState(false)
 
@@ -25,6 +26,14 @@ export function PalaceProvider({ children }) {
       .single()
 
     let palaceId = progressData?.active_palace_id
+
+    // Load all palaces for this user (for the palace switcher)
+    const { data: allPalacesData } = await supabase
+      .from('palaces')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at')
+    setAllPalaces(allPalacesData || [])
 
     // If no palace, check if legacy migration needed (has journal entries)
     if (!palaceId) {
@@ -89,6 +98,7 @@ export function PalaceProvider({ children }) {
       setZones([])
       setRooms([])
       setScenarios([])
+      setAllPalaces([])
       setHasPalace(false)
       setPalaceLoading(false)
       return
@@ -120,6 +130,19 @@ export function PalaceProvider({ children }) {
     await loadPalace(user.id)
   }, [user, loadPalace])
 
+  const deletePalace = useCallback(async (palaceId) => {
+    // If deleting the active palace, point active_palace_id at another one (or null)
+    if (palace?.id === palaceId) {
+      const other = allPalaces.find((p) => p.id !== palaceId)
+      await supabase
+        .from('user_progress')
+        .update({ active_palace_id: other?.id ?? null, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+    }
+    await supabase.from('palaces').delete().eq('id', palaceId)
+    await loadPalace(user.id)
+  }, [palace, allPalaces, user, loadPalace])
+
   // Derived: O(1) room lookup map
   const roomsById = {}
   rooms.forEach((r) => { roomsById[r.id] = r })
@@ -132,9 +155,11 @@ export function PalaceProvider({ children }) {
       scenarios,
       roomsById,
       palaceLoading,
+      allPalaces,
       hasPalace,
       refreshPalace,
       activatePalace,
+      deletePalace,
     }}>
       {children}
     </PalaceContext.Provider>

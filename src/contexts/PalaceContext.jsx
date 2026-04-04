@@ -101,9 +101,22 @@ export function PalaceProvider({ children }) {
   }, [user, loadPalace])
 
   const activatePalace = useCallback(async (palaceId) => {
-    await supabase
+    // Update existing row; if none exists, insert with safe defaults
+    const { data: updated } = await supabase
       .from('user_progress')
-      .upsert({ user_id: user.id, active_palace_id: palaceId, updated_at: new Date().toISOString() })
+      .update({ active_palace_id: palaceId, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .select('user_id')
+
+    if (!updated || updated.length === 0) {
+      await supabase.from('user_progress').insert({
+        user_id: user.id,
+        active_palace_id: palaceId,
+        xp: 0, level: 1, streak: 0, best_streak: 0,
+        total_correct: 0, total_attempts: 0,
+        achievements: [],
+      })
+    }
     await loadPalace(user.id)
   }, [user, loadPalace])
 

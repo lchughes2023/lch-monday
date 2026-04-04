@@ -47,14 +47,11 @@ export async function migrateLegacyUser(userId) {
       .eq('id', entry.id)
   }
 
-  // Set active_palace_id on user_progress
+  // Set active_palace_id on user_progress (legacy users always have a row)
   await supabase
     .from('user_progress')
-    .upsert({
-      user_id: userId,
-      active_palace_id: palace.id,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ active_palace_id: palace.id, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
 
   return palace.id
 }

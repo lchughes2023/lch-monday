@@ -40,12 +40,12 @@ export function ProgressProvider({ children }) {
 
       if (progressData) {
         setProgress({
-          xp: progressData.xp,
-          level: progressData.level,
-          streak: progressData.streak,
-          bestStreak: progressData.best_streak,
-          totalCorrect: progressData.total_correct,
-          totalAttempts: progressData.total_attempts,
+          xp: progressData.xp ?? 0,
+          level: progressData.level ?? 1,
+          streak: progressData.streak ?? 0,
+          bestStreak: progressData.best_streak ?? 0,
+          totalCorrect: progressData.total_correct ?? 0,
+          totalAttempts: progressData.total_attempts ?? 0,
           achievements: progressData.achievements || [],
         })
       } else {

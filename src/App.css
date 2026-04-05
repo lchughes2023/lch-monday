@@ -187,7 +187,13 @@ body::before {
   transition: all .2s;
   white-space: nowrap;
   letter-spacing: .02em;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
 }
+
+.tab-emoji { font-size: 1rem; line-height: 1; }
+.tab-label { line-height: 1; }
 
 .nav-tab:hover { color: var(--blue-bright); background: rgba(100,180,255,.05); }
 .nav-tab.active {
@@ -1602,3 +1608,120 @@ textarea.input { resize: vertical; min-height: 60px; }
   opacity: .8;
 }
 .btn-danger:hover { opacity: 1; }
+
+/* ── Mobile Responsive ────────────────────────────────────── */
+@media (max-width: 640px) {
+
+  /* Header — compact, hide XP bar */
+  .app-header {
+    padding: .55rem .9rem;
+    gap: .6rem;
+  }
+
+  .blueprint-icon { font-size: 1.5rem; }
+
+  .header-title h1 { font-size: .95rem; }
+
+  .subtitle { display: none; }
+
+  .xp-display { display: none; }
+
+  .header-stats { gap: .6rem; }
+
+  .streak-badge { font-size: .8rem; padding: .22rem .55rem; }
+
+  /* Nav — fixed bottom bar */
+  .app-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 0;
+    border-bottom: none;
+    border-top: 1px solid var(--border-hi);
+    background: rgba(5, 12, 28, 0.97);
+    backdrop-filter: blur(14px);
+    justify-content: space-around;
+    overflow-x: visible;
+  }
+
+  .nav-tab {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    padding: .45rem .2rem .55rem;
+    font-size: .58rem;
+    border-bottom: none;
+    border-top: 2px solid transparent;
+    min-width: 0;
+    letter-spacing: 0;
+  }
+
+  .nav-tab.active {
+    border-bottom-color: transparent;
+    border-top-color: var(--blue-bright);
+    background: rgba(100,180,255,.07);
+  }
+
+  .tab-emoji { font-size: 1.25rem; }
+
+  /* Content — extra bottom padding for fixed nav */
+  .app-main {
+    padding: .85rem .85rem 5.5rem;
+  }
+
+  /* Section headings */
+  .section-title { font-size: 1.05rem; }
+  .section-subtitle { font-size: .8rem; }
+
+  /* Buttons — touch-friendly */
+  .btn { padding: .6rem 1rem; font-size: .82rem; min-height: 40px; }
+  .btn-sm { padding: .35rem .65rem; font-size: .75rem; min-height: 34px; }
+
+  /* Login */
+  .login-card { padding: 1.75rem 1.25rem; }
+  .login-icon { font-size: 2.5rem; }
+  .login-title { font-size: 1.3rem; }
+
+  /* Palace map zone grid — single column */
+  .zone-grid { grid-template-columns: 1fr; }
+
+  /* Template gallery — single column */
+  .template-grid { grid-template-columns: 1fr; }
+
+  /* Builder */
+  .builder-header { flex-direction: column; align-items: flex-start; gap: .6rem; }
+  .zone-editor-header { gap: .4rem; }
+  .zone-color-picker { order: 10; }
+  .room-row-compact { flex-wrap: wrap; }
+
+  /* My Palaces */
+  .palace-card { flex-wrap: wrap; }
+  .palace-card-actions { margin-left: auto; }
+
+  /* Profile */
+  .profile-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .profile-actions { flex-direction: column; }
+  .profile-actions .btn { width: 100%; justify-content: center; }
+  .profile-xp-row { flex-wrap: wrap; gap: .4rem; }
+
+  /* Games */
+  .answer-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Onboarding */
+  .onboarding-nav { gap: 8px; }
+  .onboarding-nav .btn { padding: .45rem .75rem; font-size: .8rem; }
+
+  /* Modals */
+  .modal-card, .confirm-dialog { padding: 1.25rem; }
+}
+
+/* Slightly wider phones and small tablets */
+@media (max-width: 480px) {
+  .header-title h1 { font-size: .85rem; }
+  .app-main { padding: .7rem .7rem 5.5rem; }
+  .profile-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}

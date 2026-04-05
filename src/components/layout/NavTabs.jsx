@@ -1,10 +1,10 @@
 const TABS = [
-  { id: 'map', label: '🗺 Palace Map' },
-  { id: 'route', label: '🎮 Route-It' },
-  { id: 'quiz', label: '🧠 Quiz' },
-  { id: 'journal', label: '📓 Idea Log' },
-  { id: 'progress', label: '📊 Progress' },
-  { id: 'builder', label: '🏗 Builder' },
+  { id: 'map',      emoji: '🗺',  label: 'Map'     },
+  { id: 'route',    emoji: '🎮',  label: 'Route'   },
+  { id: 'quiz',     emoji: '🧠',  label: 'Quiz'    },
+  { id: 'journal',  emoji: '📓',  label: 'Log'     },
+  { id: 'progress', emoji: '📊',  label: 'Stats'   },
+  { id: 'builder',  emoji: '🏗',  label: 'Build'   },
 ]
 
 export default function NavTabs({ screen, setScreen }) {
@@ -16,7 +16,8 @@ export default function NavTabs({ screen, setScreen }) {
           className={`nav-tab ${screen === tab.id ? 'active' : ''}`}
           onClick={() => setScreen(tab.id)}
         >
-          {tab.label}
+          <span className="tab-emoji">{tab.emoji}</span>
+          <span className="tab-label">{tab.label}</span>
         </button>
       ))}
     </nav>

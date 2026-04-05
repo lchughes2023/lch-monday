@@ -8,20 +8,31 @@ import QuizMode from '../games/QuizMode'
 import IdeaJournal from '../journal/IdeaJournal'
 import ProgressPanel from '../progress/ProgressPanel'
 import PalaceBuilder from '../builder/PalaceBuilder'
+import ProfilePage from '../profile/ProfilePage'
 import MemoryPalaceOnboarding from '../onboarding/MemoryPalaceOnboarding'
 import { useProgress } from '../../contexts/ProgressContext'
 import { usePalace } from '../../contexts/PalaceContext'
 
 export default function AppShell() {
   const [screen, setScreen] = useState('map')
+  const [prevScreen, setPrevScreen] = useState('map')
   const [onboardingDone, setOnboardingDone] = useState(false)
   const { xpPopup } = useProgress()
   const { hasPalace, palaceLoading } = usePalace()
 
+  function openProfile() {
+    setPrevScreen(screen)
+    setScreen('profile')
+  }
+
+  function closeProfile() {
+    setScreen(prevScreen)
+  }
+
   if (palaceLoading) {
     return (
       <>
-        <Header />
+        <Header onOpenProfile={openProfile} />
         <main className="app-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: 'var(--text-mid)' }}>Loading…</p>
         </main>
@@ -29,12 +40,25 @@ export default function AppShell() {
     )
   }
 
-  // New user: show onboarding slides first, then template gallery
+  // Profile screen — full page overlay, works from any state
+  if (screen === 'profile') {
+    return (
+      <>
+        <Header onOpenProfile={openProfile} />
+        <main className="app-main">
+          <ProfilePage onBack={closeProfile} />
+        </main>
+        {xpPopup && <XpPopup amount={xpPopup.amount} id={xpPopup.id} />}
+      </>
+    )
+  }
+
+  // New user: onboarding → template gallery
   if (!hasPalace) {
     if (!onboardingDone) {
       return (
         <>
-          <Header />
+          <Header onOpenProfile={openProfile} />
           <main className="app-main">
             <MemoryPalaceOnboarding onDone={() => setOnboardingDone(true)} />
           </main>
@@ -43,7 +67,7 @@ export default function AppShell() {
     }
     return (
       <>
-        <Header />
+        <Header onOpenProfile={openProfile} />
         <NavTabs screen="builder" setScreen={setScreen} />
         <main className="app-main">
           <PalaceBuilder onComplete={() => setScreen('map')} />
@@ -55,7 +79,7 @@ export default function AppShell() {
 
   return (
     <>
-      <Header />
+      <Header onOpenProfile={openProfile} />
       <NavTabs screen={screen} setScreen={setScreen} />
       <main className="app-main">
         {screen === 'map'      && <PalaceMap />}

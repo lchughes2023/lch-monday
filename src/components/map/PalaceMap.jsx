@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { usePalace } from '../../contexts/PalaceContext'
+import BrainGraph from '../brain/BrainGraph'
 import BlueprintView from './BlueprintView'
 import ZoneView from './ZoneView'
 import ListView from './ListView'
@@ -7,7 +8,7 @@ import RoomDetail from './RoomDetail'
 
 export default function PalaceMap() {
   const [selectedId, setSelectedId] = useState(null)
-  const [view, setView] = useState('blueprint')
+  const [view, setView] = useState('neural')
   const { rooms, zones, roomsById, palace } = usePalace()
 
   const selected = selectedId ? roomsById[selectedId] : null
@@ -17,30 +18,39 @@ export default function PalaceMap() {
     <div className="palace-map">
       <h2 className="section-title">🏠 {palace?.name || 'Palace Map'}</h2>
       <p className="section-subtitle">
-        {rooms.length} rooms · {zones.length} cognitive zones — click any room to explore
+        {rooms.length} rooms · {zones.length} cognitive zones — click any node to explore
       </p>
 
       <div className="map-toolbar">
         <button
-          className={`btn ${view === 'blueprint' ? 'btn-primary' : ''}`}
+          className={`btn btn-sm ${view === 'neural' ? 'btn-primary' : ''}`}
+          onClick={() => setView('neural')}
+        >
+          🧠 Neural
+        </button>
+        <button
+          className={`btn btn-sm ${view === 'blueprint' ? 'btn-primary' : ''}`}
           onClick={() => setView('blueprint')}
         >
           🏗 Blueprint
         </button>
         <button
-          className={`btn ${view === 'zone' ? 'btn-primary' : ''}`}
+          className={`btn btn-sm ${view === 'zone' ? 'btn-primary' : ''}`}
           onClick={() => setView('zone')}
         >
-          Zone View
+          Zones
         </button>
         <button
-          className={`btn ${view === 'list' ? 'btn-primary' : ''}`}
+          className={`btn btn-sm ${view === 'list' ? 'btn-primary' : ''}`}
           onClick={() => setView('list')}
         >
-          Room List
+          List
         </button>
       </div>
 
+      {view === 'neural' && (
+        <BrainGraph selectedId={selectedId} onSelect={setSelectedId} />
+      )}
       {view === 'blueprint' && (
         <BlueprintView selectedId={selectedId} onSelect={setSelectedId} />
       )}

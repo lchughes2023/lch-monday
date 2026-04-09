@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { usePalace } from '../../contexts/PalaceContext'
 import { useProgress } from '../../contexts/ProgressContext'
 
@@ -32,7 +32,8 @@ export default function QuizMode() {
   const [done, setDone] = useState(false)
 
   // Only rooms with a theme field are quiz-able
-  const quizRooms = rooms.filter((r) => r.theme)
+  // useMemo prevents a new array ref every render, which would re-trigger init infinitely
+  const quizRooms = useMemo(() => rooms.filter((r) => r.theme), [rooms])
 
   const init = useCallback(() => {
     if (quizRooms.length < 4) return

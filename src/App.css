@@ -1656,6 +1656,52 @@ textarea.input { resize: vertical; min-height: 60px; }
   font-family: monospace;
 }
 
+.brain-tooltip {
+  background: rgba(3, 10, 24, 0.93);
+  border: 1px solid rgba(100, 180, 255, 0.30);
+  border-radius: 6px;
+  padding: .45rem .6rem;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 24px rgba(0, 30, 80, 0.7);
+  pointer-events: none;
+}
+
+.brain-tooltip-header {
+  font-size: .6rem;
+  font-family: monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--blue-bright);
+  margin-bottom: .3rem;
+  opacity: .8;
+}
+
+.brain-tooltip-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brain-tooltip-item {
+  font-size: .6rem;
+  font-family: monospace;
+  color: var(--text-mid);
+  line-height: 1.35;
+  padding: 2px 0;
+  border-top: 1px solid rgba(100, 180, 255, 0.08);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brain-tooltip-item::before {
+  content: '· ';
+  color: var(--blue-dim);
+}
+
 /* ── Mobile Responsive ────────────────────────────────────── */
 @media (max-width: 640px) {
 

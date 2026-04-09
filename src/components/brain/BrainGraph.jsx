@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { usePalace } from '../../contexts/PalaceContext'
+import { useProgress } from '../../contexts/ProgressContext'
 
 const W = 700
 const H = 420
@@ -12,6 +13,11 @@ const SPRING_LEN = 145
 const DAMPING    = 0.78
 const CENTER_G   = 0.010
 const WALL       = 0.10
+
+// Node radius scales with memory count: 12 base + up to 18 extra
+function nodeRadius(memCount) {
+  return 12 + Math.min(Math.sqrt(memCount || 0) * 3, 18)
+}
 
 // Starting anchor positions (physics takes over immediately)
 const ZONE_ANCHORS = [
@@ -98,12 +104,22 @@ function Legend({ zones }) {
 // ── Main ─────────────────────────────────────────────────────
 export default function BrainGraph({ selectedId, onSelect }) {
   const { rooms, zones, scenarios } = usePalace()
+  const { journalEntries } = useProgress()
   const [, forceRender] = useState(0)
   const svgRef    = useRef(null)
   const nodesRef  = useRef([])
   const dragRef   = useRef(null)  // { id, startX, startY, moved }
   const tickRef   = useRef(0)
   const rafRef    = useRef(null)
+
+  // Count journal entries per room — drives node sizing
+  const memoriesByRoom = useMemo(() => {
+    const m = {}
+    journalEntries.forEach(e => {
+      if (e.roomId) m[e.roomId] = (m[e.roomId] || 0) + 1
+    })
+    return m
+  }, [journalEntries])
 
   // Build edge list (pairs of ids)
   const { edges, pairs } = useMemo(() => {
@@ -134,11 +150,33 @@ export default function BrainGraph({ selectedId, onSelect }) {
     return { edges, pairs }
   }, [rooms, zones, scenarios])
 
+  // L1 = directly connected to selected; L2 = one hop further
+  const { l1Set, l2Set } = useMemo(() => {
+    if (!selectedId) return { l1Set: new Set(), l2Set: new Set() }
+    const l1Set = new Set()
+    for (const [a, b] of pairs) {
+      if (a === selectedId) l1Set.add(b)
+      else if (b === selectedId) l1Set.add(a)
+    }
+    const l2Set = new Set()
+    for (const [a, b] of pairs) {
+      if (l1Set.has(a) && b !== selectedId && !l1Set.has(b)) l2Set.add(b)
+      else if (l1Set.has(b) && a !== selectedId && !l1Set.has(a)) l2Set.add(a)
+    }
+    return { l1Set, l2Set }
+  }, [selectedId, pairs])
+
+  // Top-10 most-recent memories for the selected room (for tooltip)
+  const selectedMemories = useMemo(() => {
+    if (!selectedId) return []
+    return journalEntries.filter(e => e.roomId === selectedId).slice(0, 10)
+  }, [selectedId, journalEntries])
+
   // Initialise / re-initialise nodes when rooms change
   useEffect(() => {
     const existing = Object.fromEntries(nodesRef.current.map(n => [n.id, n]))
-    nodesRef.current = rooms.map((room, i) => {
-      if (existing[room.id]) return existing[room.id] // keep physics state
+    nodesRef.current = rooms.map((room) => {
+      if (existing[room.id]) return existing[room.id]
       const zi = zones.findIndex(z => z.id === room.zone_id)
       const anchor = ZONE_ANCHORS[Math.max(0, zi) % ZONE_ANCHORS.length]
       const zoneRooms = rooms.filter(r => r.zone_id === room.zone_id)
@@ -201,9 +239,36 @@ export default function BrainGraph({ selectedId, onSelect }) {
     dragRef.current = null
   }
 
+  // Returns { op, sw, ps } — opacity, stroke-width, pulse-scale — for each edge
+  function edgeStyle(edge) {
+    if (!selectedId) return { op: edge.w, sw: edge.dashed ? 0.8 : 0.7, ps: 1.0 }
+    const isPrimary   = edge.from === selectedId || edge.to === selectedId
+    if (isPrimary)    return { op: Math.min(edge.w * 5, 0.88), sw: edge.dashed ? 2.2 : 2.0, ps: 1.8 }
+    const isSecondary = l1Set.has(edge.from) || l1Set.has(edge.to)
+    if (isSecondary)  return { op: edge.w * 1.6, sw: edge.dashed ? 1.2 : 1.0, ps: 1.0 }
+    return { op: edge.w * 0.15, sw: edge.dashed ? 0.4 : 0.35, ps: 0.3 }
+  }
+
   // Snapshot positions for render
   const byId = Object.fromEntries(nodesRef.current.map(n => [n.id, n]))
   const tick  = tickRef.current
+
+  // Tooltip dimensions + position (in SVG-space units)
+  const TP_W      = 215
+  const TP_LINE_H = 22
+  const TP_H      = selectedMemories.length > 0
+    ? Math.min(selectedMemories.length * TP_LINE_H + 48, 274)
+    : 0
+  const selectedNode = selectedId ? byId[selectedId] : null
+  let tooltipX = 0, tooltipY = 0
+  if (selectedNode && TP_H > 0) {
+    const selR = nodeRadius(memoriesByRoom[selectedId] || 0) + 6
+    tooltipX = selectedNode.x + selR + 14
+    if (tooltipX + TP_W > W - 8) tooltipX = selectedNode.x - selR - 14 - TP_W
+    tooltipX = Math.max(8, tooltipX)
+    tooltipY = selectedNode.y - TP_H / 2
+    tooltipY = Math.max(8, Math.min(tooltipY, H - TP_H - 8))
+  }
 
   return (
     <div className="brain-graph-wrap">
@@ -236,6 +301,7 @@ export default function BrainGraph({ selectedId, onSelect }) {
           const a = byId[edge.from], b = byId[edge.to]
           if (!a || !b) return null
 
+          const { op, sw, ps } = edgeStyle(edge)
           const speed  = 0.006
           const offset = ((a.x * 0.03 + a.y * 0.02) % 1 + 1) % 1
           const ph1    = ((tick * speed + offset) % 1 + 1) % 1
@@ -250,12 +316,12 @@ export default function BrainGraph({ selectedId, onSelect }) {
             <g key={edge.id}>
               <line
                 x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                stroke={edge.color} strokeWidth={edge.dashed ? 0.8 : 0.7}
-                opacity={edge.w}
+                stroke={edge.color} strokeWidth={sw}
+                opacity={op}
                 strokeDasharray={edge.dashed ? '5 5' : undefined}
               />
-              <circle cx={p1x} cy={p1y} r={2.8} fill={edge.color} opacity={fade(ph1) * 0.95} />
-              <circle cx={p2x} cy={p2y} r={1.8} fill={edge.color} opacity={fade(ph2) * 0.6} />
+              <circle cx={p1x} cy={p1y} r={2.8 * ps} fill={edge.color} opacity={fade(ph1) * 0.95 * Math.min(ps, 1)} />
+              <circle cx={p2x} cy={p2y} r={1.8 * ps} fill={edge.color} opacity={fade(ph2) * 0.60 * Math.min(ps, 1)} />
             </g>
           )
         })}
@@ -265,13 +331,14 @@ export default function BrainGraph({ selectedId, onSelect }) {
           const anchor  = ZONE_ANCHORS[zi % ZONE_ANCHORS.length]
           const zr      = rooms.filter(r => r.zone_id === zone.id)
           if (!zr.length) return null
-          const avgX = zr.reduce((s, r) => s + (byId[r.id]?.x ?? anchor.x), 0) / zr.length
-          const avgY = zr.reduce((s, r) => s + (byId[r.id]?.y ?? anchor.y), 0) / zr.length - 52
+          const avgX    = zr.reduce((s, r) => s + (byId[r.id]?.x ?? anchor.x), 0) / zr.length
+          const avgY    = zr.reduce((s, r) => s + (byId[r.id]?.y ?? anchor.y), 0) / zr.length - 52
           return (
             <text key={zone.id}
               x={avgX} y={Math.max(12, avgY)}
               textAnchor="middle" fill={zone.color}
-              fontSize={7.5} fontFamily="monospace" letterSpacing={2} opacity={0.5}
+              fontSize={7.5} fontFamily="monospace" letterSpacing={2}
+              opacity={selectedId ? 0.18 : 0.50}
               style={{ pointerEvents: 'none', userSelect: 'none' }}
             >
               {zone.name.toUpperCase()}
@@ -283,38 +350,72 @@ export default function BrainGraph({ selectedId, onSelect }) {
         {rooms.map(room => {
           const n = byId[room.id]
           if (!n) return null
-          const zone  = zones.find(z => z.id === room.zone_id)
-          const color = zone?.color || '#64b4ff'
-          const isSel = selectedId === room.id
-          const isDrag = dragRef.current?.id === room.id
-          const breathe = 0.5 + 0.5 * Math.sin(tick * 0.032 + n.x * 0.07 + n.y * 0.05)
-          const r     = isSel ? 22 : 16
-          const glowOp = isSel ? 0.70 : (isDrag ? 0.55 : 0.14 + breathe * 0.12)
-          const cursor  = isDrag ? 'grabbing' : 'grab'
+          const zone     = zones.find(z => z.id === room.zone_id)
+          const color    = zone?.color || '#64b4ff'
+          const isSel    = selectedId === room.id
+          const isL1     = l1Set.has(room.id)
+          const isL2     = l2Set.has(room.id)
+          const isDrag   = dragRef.current?.id === room.id
+          const memCount = memoriesByRoom[room.id] || 0
+          const baseR    = nodeRadius(memCount)
+          const r        = isSel ? baseR + 6 : baseR
+
+          // Glow: full breathe when nothing selected; tiered when something is
+          let glowOp
+          if (isDrag) {
+            glowOp = 0.55
+          } else if (isSel) {
+            glowOp = 0.80
+          } else if (selectedId) {
+            if (isL1)      glowOp = 0.50
+            else if (isL2) glowOp = 0.22
+            else           glowOp = 0.04
+          } else {
+            const breathe = 0.5 + 0.5 * Math.sin(tick * 0.032 + n.x * 0.07 + n.y * 0.05)
+            glowOp = 0.14 + breathe * 0.12
+          }
+
+          const ringOp = selectedId && !isSel && !isL1 && !isL2 ? 0.25 : 1.0
+          const cursor = isDrag ? 'grabbing' : 'grab'
 
           return (
             <g key={room.id}
               onPointerDown={e => onNodeDown(e, room.id)}
               style={{ cursor }}
             >
-              {/* Glow */}
+              {/* Glow halo */}
               <circle cx={n.x} cy={n.y} r={r + 11} fill={color} opacity={glowOp} filter="url(#glow)" />
               {/* Ring */}
               <circle cx={n.x} cy={n.y} r={r}
                 fill={isSel ? color + '30' : '#07101e'}
-                stroke={color} strokeWidth={isSel ? 2.5 : 1.8} />
+                stroke={color} strokeWidth={isSel ? 2.5 : 1.8}
+                opacity={ringOp}
+              />
+              {/* Memory count badge */}
+              {memCount > 0 && !isSel && (
+                <text
+                  x={n.x + r * 0.68} y={n.y - r * 0.68}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize={5.5} fill={color} fontFamily="monospace" fontWeight="bold"
+                  opacity={ringOp * 0.75}
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                  {memCount > 99 ? '99+' : memCount}
+                </text>
+              )}
               {/* Emoji */}
               <text x={n.x} y={n.y + 1}
                 textAnchor="middle" dominantBaseline="central"
-                fontSize={isSel ? 15 : 12}
+                fontSize={isSel ? Math.max(15, baseR * 0.85) : Math.max(12, baseR * 0.75)}
+                opacity={ringOp}
                 style={{ userSelect: 'none', pointerEvents: 'none' }}
               >
                 {room.emoji}
               </text>
-              {/* Name on select */}
+              {/* Name label when selected */}
               {isSel && (
                 <>
-                  <rect x={n.x - 50} y={n.y + r + 3} width={100} height={13} rx={3}
+                  <rect x={n.x - 52} y={n.y + r + 3} width={104} height={13} rx={3}
                     fill="#030a16" opacity={0.9} />
                   <text x={n.x} y={n.y + r + 11}
                     textAnchor="middle" fontSize={7} fill={color}
@@ -328,6 +429,24 @@ export default function BrainGraph({ selectedId, onSelect }) {
             </g>
           )
         })}
+
+        {/* Memory tooltip — appears beside selected node if it has journal entries */}
+        {selectedNode && TP_H > 0 && (
+          <foreignObject x={tooltipX} y={tooltipY} width={TP_W} height={TP_H} style={{ overflow: 'visible' }}>
+            <div className="brain-tooltip">
+              <div className="brain-tooltip-header">
+                📝 {selectedMemories.length} memor{selectedMemories.length === 1 ? 'y' : 'ies'}
+              </div>
+              <ul className="brain-tooltip-list">
+                {selectedMemories.map((e) => (
+                  <li key={e.id} className="brain-tooltip-item">
+                    {e.text.length > 58 ? e.text.slice(0, 58) + '…' : e.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </foreignObject>
+        )}
 
         {/* Stats watermark */}
         <text x={W - 10} y={H - 8} textAnchor="end"

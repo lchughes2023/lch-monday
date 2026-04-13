@@ -2,23 +2,23 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg-deep:   #07182e;
-  --bg-mid:    #0c2340;
-  --bg-card:   rgba(0, 55, 110, 0.38);
-  --bg-hover:  rgba(0, 75, 150, 0.55);
-  --blue-bright: #64b4ff;
-  --blue-mid:    #3a80c0;
-  --blue-dim:    #1a4a80;
-  --text-hi:   #d0eaff;
-  --text-mid:  #8ab8e8;
-  --text-lo:   #4a7090;
-  --border:    rgba(100, 180, 255, 0.25);
-  --border-hi: rgba(100, 180, 255, 0.65);
-  --glow:      0 0 18px rgba(100, 180, 255, 0.28);
-  --glow-hi:   0 0 28px rgba(100, 180, 255, 0.55);
-  --gold:      #ffd060;
-  --correct:   #28c860;
-  --wrong:     #e03030;
+  --bg-deep:   #e8f1fb;
+  --bg-mid:    #d4e5f7;
+  --bg-card:   rgba(80, 140, 220, 0.10);
+  --bg-hover:  rgba(80, 140, 220, 0.18);
+  --blue-bright: #1a6ecc;
+  --blue-mid:    #2a5a9a;
+  --blue-dim:    #a0c4e8;
+  --text-hi:   #0a1a2e;
+  --text-mid:  #1e3d60;
+  --text-lo:   #4a6a8a;
+  --border:    rgba(50, 100, 180, 0.20);
+  --border-hi: rgba(50, 100, 180, 0.50);
+  --glow:      0 0 18px rgba(50, 120, 200, 0.20);
+  --glow-hi:   0 0 28px rgba(50, 120, 200, 0.40);
+  --gold:      #c07800;
+  --correct:   #1a9040;
+  --wrong:     #c02020;
   --radius:    10px;
 }
 
@@ -36,8 +36,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(100,180,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(100,180,255,.04) 1px, transparent 1px);
+    linear-gradient(rgba(50,100,200,.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(50,100,200,.10) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none;
   z-index: 0;
